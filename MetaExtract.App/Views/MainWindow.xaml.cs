@@ -1,0 +1,166 @@
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using Microsoft.Win32;
+using MetaExtract.Core.Models;
+using MetaExtract.App.ViewModels;
+
+namespace MetaExtract.App.Views;
+
+public partial class MainWindow : Window
+{
+    private MainViewModel ViewModel => (MainViewModel)DataContext;
+
+    public MainWindow()
+    {
+        InitializeComponent();
+        DataContext = new MainViewModel();
+
+        ViewModel.SelectedFields.CollectionChanged += (_, _) => RebuildResultsColumns();
+        RebuildResultsColumns();
+
+        Closing += (_, _) => ViewModel.SaveSettings();
+    }
+
+    /// <summary>
+    /// Reconstruit dynamiquement les colonnes de la grille de résultats à
+    /// partir des champs sélectionnés (clé + ordre). Chaque colonne se lie
+    /// via l'indexeur de VideoFileRecord (Binding "[Clé]"), ce qui évite
+    /// de générer une classe/propriété par champ.
+    /// </summary>
+    private void RebuildResultsColumns()
+    {
+        ResultsDataGrid.Columns.Clear();
+        foreach (var field in ViewModel.SelectedFields)
+        {
+            var column = new DataGridTextColumn
+            {
+                Header = field.Label,
+                Binding = new Binding($"[{field.Key}]"),
+                IsReadOnly = true,
+            };
+            ResultsDataGrid.Columns.Add(column);
+        }
+    }
+
+    private void AddFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        // FolderBrowserDialog (WinForms) ne propose le multi-sélection
+        // qu'à partir de .NET 9 : on utilise donc CommonOpenFileDialog
+        // (package WindowsAPICodePack), qui le supporte depuis longtemps.
+        using var dialog = new Microsoft.WindowsAPICodePack.Dialogs.CommonOpenFileDialog
+        {
+            Title = "Sélectionner un ou plusieurs dossiers à analyser",
+            IsFolderPicker = true,
+            Multiselect = true,
+        };
+
+        if (dialog.ShowDialog() == Microsoft.WindowsAPICodePack.Dialogs.CommonFileDialogResult.Ok)
+        {
+            foreach (var path in dialog.FileNames)
+            {
+                ViewModel.AddFolder(path);
+            }
+        }
+    }
+
+    private void SettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        var settingsWindow = new SettingsWindow(ViewModel.MediaInfoExecutablePath) { Owner = this };
+        if (settingsWindow.ShowDialog() == true)
+        {
+            ViewModel.MediaInfoExecutablePath = settingsWindow.ResultPath;
+            ViewModel.SaveSettings();
+        }
+    }
+
+    private void AddFieldButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (AvailableFieldsListBox.SelectedItem is MetadataFieldDefinition field)
+            ViewModel.AddFieldCommand.Execute(field);
+    }
+
+    private void AvailableFieldsListBox_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (AvailableFieldsListBox.SelectedItem is MetadataFieldDefinition field)
+            ViewModel.AddFieldCommand.Execute(field);
+    }
+
+    private void RemoveFieldButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (SelectedFieldsListBox.SelectedItem is MetadataFieldDefinition field)
+            ViewModel.RemoveFieldCommand.Execute(field);
+    }
+
+    private void MoveFieldUpButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (SelectedFieldsListBox.SelectedItem is MetadataFieldDefinition field)
+            ViewModel.MoveFieldUpCommand.Execute(field);
+    }
+
+    private void MoveFieldDownButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (SelectedFieldsListBox.SelectedItem is MetadataFieldDefinition field)
+            ViewModel.MoveFieldDownCommand.Execute(field);
+    }
+
+    private void ExportCsvButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.Results.Count == 0)
+        {
+            MessageBox.Show(this, "Aucun résultat à exporter. Lancez d'abord un scan.", "Export CSV",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new SaveFileDialog
+        {
+            Title = "Exporter en CSV",
+            Filter = "Fichier CSV (*.csv)|*.csv",
+            FileName = "metadonnees_video.csv",
+        };
+
+        if (dialog.ShowDialog(this) == true)
+        {
+            try
+            {
+                ViewModel.ExportCsv(dialog.FileName);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Échec de l'export CSV : {ex.Message}", "Export CSV",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+
+    private void ExportExcelButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.Results.Count == 0)
+        {
+            MessageBox.Show(this, "Aucun résultat à exporter. Lancez d'abord un scan.", "Export Excel",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new SaveFileDialog
+        {
+            Title = "Exporter en Excel",
+            Filter = "Classeur Excel (*.xlsx)|*.xlsx",
+            FileName = "metadonnees_video.xlsx",
+        };
+
+        if (dialog.ShowDialog(this) == true)
+        {
+            try
+            {
+                ViewModel.ExportExcel(dialog.FileName);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Échec de l'export Excel : {ex.Message}", "Export Excel",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+}

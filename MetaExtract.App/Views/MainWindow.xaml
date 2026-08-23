@@ -1,0 +1,112 @@
+<Window x:Class="MetaExtract.App.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MetaExtract — Extraction de métadonnées vidéo" Height="760" Width="1280"
+        MinHeight="560" MinWidth="960"
+        Icon="/Assets/app.ico">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Barre d'actions -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,10" LastChildFill="False">
+            <Button DockPanel.Dock="Left" Content="Paramètres..." Padding="10,5" Margin="0,0,16,0" Click="SettingsButton_Click"/>
+            <Button DockPanel.Dock="Left" Content="Lancer le scan" Padding="14,5" Margin="0,0,6,0"
+                    Command="{Binding StartScanCommand}"/>
+            <Button DockPanel.Dock="Left" Content="Annuler" Padding="14,5" Margin="0,0,16,0"
+                    Command="{Binding CancelScanCommand}"/>
+            <Button DockPanel.Dock="Right" Content="Exporter Excel..." Padding="10,5" Margin="6,0,0,0" Click="ExportExcelButton_Click"/>
+            <Button DockPanel.Dock="Right" Content="Exporter CSV..." Padding="10,5" Click="ExportCsvButton_Click"/>
+        </DockPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="360"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Panneau latéral : dossiers + colonnes -->
+            <ScrollViewer Grid.Column="0" Margin="0,0,10,0" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+
+                    <GroupBox Header="Dossiers à analyser (parcours récursif)" Padding="6" Margin="0,0,0,10">
+                        <StackPanel>
+                            <ListBox x:Name="FoldersListBox" Height="120"
+                                     ItemsSource="{Binding SelectedFolders}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <Button Content="Ajouter un dossier..." Padding="8,4" Margin="0,0,6,0" Click="AddFolderButton_Click"/>
+                                <Button Content="Retirer" Padding="8,4"
+                                        Command="{Binding RemoveFolderCommand}"
+                                        CommandParameter="{Binding SelectedItem, ElementName=FoldersListBox}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="Colonnes à afficher / exporter (nom de fichier toujours en premier)" Padding="6">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Champs disponibles" FontWeight="Bold" Margin="0,0,0,4"/>
+                                    <ListBox x:Name="AvailableFieldsListBox" Height="220"
+                                             ItemsSource="{Binding AvailableFields}"
+                                             DisplayMemberPath="Label"
+                                             MouseDoubleClick="AvailableFieldsListBox_MouseDoubleClick"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="6,0">
+                                    <Button Content="&gt;" Width="32" Margin="0,0,0,4" Click="AddFieldButton_Click"/>
+                                    <Button Content="&lt;" Width="32" Click="RemoveFieldButton_Click"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Champs sélectionnés (ordre)" FontWeight="Bold" Margin="0,0,0,4"/>
+                                    <ListBox x:Name="SelectedFieldsListBox" Height="220"
+                                             ItemsSource="{Binding SelectedFields}"
+                                             DisplayMemberPath="Label"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="3" VerticalAlignment="Center" Margin="6,0">
+                                    <Button Content="▲" Width="32" Margin="0,0,0,4" Click="MoveFieldUpButton_Click"/>
+                                    <Button Content="▼" Width="32" Click="MoveFieldDownButton_Click"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Résultats -->
+            <DataGrid x:Name="ResultsDataGrid" Grid.Column="1"
+                      ItemsSource="{Binding Results}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      SelectionMode="Extended"
+                      GridLinesVisibility="Horizontal"
+                      AlternatingRowBackground="#F5F5F5"/>
+        </Grid>
+
+        <!-- Barre de statut -->
+        <Grid Grid.Row="2" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="240"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+            <ProgressBar Grid.Column="1" Height="18" Minimum="0"
+                         Maximum="{Binding ProgressTotal}" Value="{Binding ProgressCurrent}"/>
+        </Grid>
+    </Grid>
+</Window>

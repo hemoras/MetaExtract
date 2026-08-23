@@ -1,0 +1,56 @@
+# ==============================
+# Build results (.NET / Visual Studio)
+# ==============================
+[Bb]in/
+[Oo]bj/
+out/
+
+# ==============================
+# Visual Studio / Rider / VS Code
+# ==============================
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ==============================
+# Packages produits par scripts/release.ps1
+# (zip livrables — voir MetaExtract_Mode_Operatoire pour les versions publiées
+#  sur GitHub Releases, pas besoin de les versionner dans git)
+# ==============================
+releases/
+
+# ==============================
+# NuGet
+# ==============================
+*.nupkg
+*.snupkg
+**/packages/
+.nuget/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ==============================
+# Fichiers générés par le script de mode opératoire
+# (le PDF final et les captures d'écran RESTENT versionnés,
+#  seuls d'éventuels fichiers temporaires de génération sont ignorés)
+# ==============================
+docs/mode_operatoire/**/__pycache__/
+docs/mode_operatoire/**/*.pyc
+
+# ==============================
+# OS
+# ==============================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==============================
+# Logs / divers
+# ==============================
+*.log
+*.tmp

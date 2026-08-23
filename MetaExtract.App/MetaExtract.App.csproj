@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>MetaExtract.App</RootNamespace>
+    <AssemblyName>MetaExtract</AssemblyName>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <LangVersion>latest</LangVersion>
+    <!-- Publier en exécutable autonome (pas besoin d'installer .NET sur le poste cible) -->
+    <SelfContained>false</SelfContained>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      UseWPF + UseWindowsForms ajoutent chacun un "using" implicite global
+      (System.Windows.* et System.Windows.Forms). Comme les deux définissent
+      Application, MessageBox, OpenFileDialog, SaveFileDialog..., ça rend ces
+      noms ambigus dans tout le projet. On ne retire que celui de WinForms :
+      FolderBrowserDialog reste utilisable, on l'appelle juste en toutes
+      lettres (System.Windows.Forms.FolderBrowserDialog) dans MainWindow.xaml.cs.
+    -->
+    <Using Remove="System.Windows.Forms" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+    <!--
+      FolderBrowserDialog.Multiselect/SelectedPaths (WinForms) n'existe
+      qu'à partir de .NET 9 : sur .NET 8 (ciblé ici), la sélection
+      multiple de dossiers en une seule boîte de dialogue nécessite ce
+      package (CommonOpenFileDialog avec IsFolderPicker + Multiselect).
+    -->
+    <PackageReference Include="WindowsAPICodePack" Version="8.0.15.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MetaExtract.Core\MetaExtract.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Rend l'icône disponible via une URI "pack" pour Window.Icon (voir MainWindow.xaml). -->
+    <Resource Include="Assets\app.ico" />
+  </ItemGroup>
+
+</Project>
