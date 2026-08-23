@@ -52,6 +52,7 @@ public static class FieldCatalog
         new("AudioChannels",      "Canaux audio",             FieldCategory.Audio),
         new("AudioSampleRate",    "Fréquence d'échantillonnage", FieldCategory.Audio),
         new("AudioLanguage",      "Langue audio",             FieldCategory.Audio),
+        new("TvChannel",          "Chaîne",                   FieldCategory.Audio),
         new("AudioTrackCount",    "Nb pistes audio",          FieldCategory.Audio),
 
         new("Error",              "Erreur",                   FieldCategory.FichierEtDossier),
@@ -107,6 +108,7 @@ public static class FieldCatalog
                 ? (record.AudioSampleRate.Value / 1000.0).ToString("0.#", CultureInfo.InvariantCulture) + " kHz"
                 : "",
             "AudioLanguage" => record.AudioLanguage ?? "",
+            "TvChannel" => record.TvChannelName ?? "",
             "AudioTrackCount" => record.AudioTrackCount.ToString(CultureInfo.InvariantCulture),
 
             "Error" => record.Error ?? "",

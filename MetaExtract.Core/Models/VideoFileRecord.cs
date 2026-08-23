@@ -47,6 +47,8 @@ public sealed class VideoFileRecord
     public long? AudioSampleRate { get; init; }
     public string? AudioLanguage { get; init; }
     public int AudioTrackCount { get; init; }
+    /// <summary>Chaîne(s) TV déduite(s) du champ Audio/Title (ex: "TF1 (José Rosinski)" → "TF1"), une par piste distincte.</summary>
+    public string? TvChannelName { get; init; }
 
     /// <summary>Message d'erreur si l'extraction a échoué pour ce fichier (le fichier reste listé).</summary>
     public string? Error { get; init; }

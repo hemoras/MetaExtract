@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Text.RegularExpressions;
 using MetaExtract.Core.Models;
 
 namespace MetaExtract.Core.Services;
@@ -49,8 +50,13 @@ public sealed class MediaInfoCliProvider : IMediaInfoProvider
     // (les vrais retours à la ligne ci-dessous séparent les règles entre elles).
     private const string TemplateContent =
         "General;GEN|%Format%|%Duration%|%OverallBitRate%\\n\n" +
-        "Video;VID|%Format%|%CodecID%|%Format_Profile%|%Width%|%Height%|%FrameRate%|%BitRate%|%BitDepth%|%DisplayAspectRatio%|%ScanType%|%ChromaSubsampling%\\n\n" +
-        "Audio;AUD|%Format%|%CodecID%|%BitRate%|%BitRate_Mode%|%Channels%|%SamplingRate%|%Language%\\n\n";
+        "Video;VID|%Format%|%CodecID%|%Format_Profile%|%Width%|%Height%|%FrameRate%|%BitRate%|%BitDepth%|%DisplayAspectRatio/String%|%ScanType%|%ChromaSubsampling%\\n\n" +
+        "Audio;AUD|%Format%|%CodecID%|%BitRate%|%BitRate_Mode%|%Channels%|%SamplingRate%|%Language%|%Title%\\n\n";
+
+    // Extrait la "chaîne" du champ Audio/Title en retirant un éventuel
+    // suffixe entre parenthèses (ex: "TF1 (José Rosinski)" -> "TF1").
+    // Si aucune parenthèse n'est présente, la valeur est retournée telle quelle.
+    private static readonly Regex ChaineParenSuffixRegex = new(@"\s*\([^)]*\)\s*$", RegexOptions.Compiled);
 
     private static readonly string TemplateFilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -172,11 +178,16 @@ public sealed class MediaInfoCliProvider : IMediaInfoProvider
         long? videoBitRate = null;
         bool videoCaptured = false;
 
-        string? audioFormat = null, audioCodecId = null, audioBitRateMode = null, audioChannels = null, audioLanguage = null;
+        string? audioFormat = null, audioCodecId = null, audioBitRateMode = null, audioChannels = null;
         long? audioBitRate = null, audioSampleRate = null;
         int audioTrackCount = 0;
         bool audioCaptured = false;
         bool generalCaptured = false;
+
+        // Agrégées sur TOUTES les pistes audio (pas seulement la première) :
+        // langues distinctes et chaînes distinctes déduites d'Audio/Title.
+        var audioLanguagesSeen = new List<string>();
+        var chainesSeen = new List<string>();
 
         foreach (var rawLine in output.Split('\n'))
         {
@@ -214,20 +225,33 @@ public sealed class MediaInfoCliProvider : IMediaInfoProvider
             else if (line.StartsWith("AUD|", StringComparison.Ordinal))
             {
                 audioTrackCount++;
+                var f = line.Substring(4).Split('|');
+
                 if (!audioCaptured)
                 {
-                    var f = line.Substring(4).Split('|');
                     audioFormat = Field(f, 0);
                     audioCodecId = Field(f, 1);
                     audioBitRate = ParseLong(f, 2);
                     audioBitRateMode = Field(f, 3);
                     audioChannels = Field(f, 4);
                     audioSampleRate = ParseLong(f, 5);
-                    audioLanguage = Field(f, 6);
                     audioCaptured = true;
                 }
+
+                // Langue et chaîne sont agrégées sur TOUTES les pistes audio,
+                // pas seulement la première (contrairement aux champs ci-dessus).
+                var trackLanguage = Field(f, 6);
+                if (trackLanguage is not null && !audioLanguagesSeen.Contains(trackLanguage, StringComparer.OrdinalIgnoreCase))
+                    audioLanguagesSeen.Add(trackLanguage);
+
+                var chaine = ExtractChaine(Field(f, 7));
+                if (chaine is not null && !chainesSeen.Contains(chaine, StringComparer.OrdinalIgnoreCase))
+                    chainesSeen.Add(chaine);
             }
         }
+
+        string? audioLanguage = audioLanguagesSeen.Count > 0 ? string.Join(", ", audioLanguagesSeen) : null;
+        string? tvChannelName = chainesSeen.Count > 0 ? string.Join(", ", chainesSeen) : null;
 
         if (!generalCaptured && !videoCaptured && !audioCaptured)
             return BuildBaseRecord(filePath, fileInfo, "Aucune donnée retournée par MediaInfo pour ce fichier.");
@@ -265,7 +289,23 @@ public sealed class MediaInfoCliProvider : IMediaInfoProvider
             AudioSampleRate = audioSampleRate,
             AudioLanguage = audioLanguage,
             AudioTrackCount = audioTrackCount,
+            TvChannelName = tvChannelName,
         };
+    }
+
+    /// <summary>
+    /// Déduit la "chaîne" (ex: "TF1") à partir du champ Audio/Title, qui
+    /// contient parfois en plus le(s) commentateur(s) entre parenthèses
+    /// (ex: "TF1 (José Rosinski)"). Le suffixe entre parenthèses est retiré
+    /// s'il est présent ; sinon la valeur du titre est conservée telle quelle
+    /// (ex: "TF1" -> "TF1"). Retourne null si le titre est vide/absent ou si
+    /// le résultat après nettoyage est vide.
+    /// </summary>
+    private static string? ExtractChaine(string? title)
+    {
+        if (string.IsNullOrWhiteSpace(title)) return null;
+        var cleaned = ChaineParenSuffixRegex.Replace(title.Trim(), "").Trim();
+        return string.IsNullOrEmpty(cleaned) ? null : cleaned;
     }
 
     private static string? Field(string[] fields, int index) =>
