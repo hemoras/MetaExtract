@@ -88,6 +88,20 @@ zip dans `releases\` (ignoré par git), tag git `vX.Y.Z`, push vers
 Depuis un terminal PowerShell, à la racine du dépôt (working tree propre,
 sans modification non commitée) :
 
+> **Première exécution : erreur « n'est pas signé numériquement »**
+> Par défaut, Windows interdit l'exécution des scripts `.ps1` non signés.
+> Si `.\scripts\release.ps1` refuse de se lancer avec une erreur
+> `UnauthorizedAccess` / « non signé numériquement », autorisez
+> l'exécution des scripts locaux une bonne fois pour toutes (pas besoin
+> d'être administrateur) :
+> ```powershell
+> Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+> ```
+> Ou, sans changer le réglage de façon permanente, pour un seul lancement :
+> ```powershell
+> powershell -ExecutionPolicy Bypass -File .\scripts\release.ps1 -Version 1.0.0
+> ```
+
 ```powershell
 # Première release, à partir de la version actuelle (1.0.0) sans l'incrémenter :
 .\scripts\release.ps1 -Version 1.0.0
