@@ -209,7 +209,12 @@ public sealed class MediaInfoCliProvider : IMediaInfoProvider
                 {
                     var f = line.Substring(4).Split('|');
                     videoFormat = Field(f, 0);
-                    videoCodecId = Field(f, 1);
+                    // %CodecID% (position 1 du template) n'est pas fiable pour l'affichage :
+                    // c'est un identifiant propre au conteneur (ex. "V_MPEG4/ISO/AVC" en
+                    // Matroska, mais un simple code numérique comme "27" en MPEG-TS, illisible).
+                    // %Format% est en revanche cohérent quel que soit le conteneur (toujours
+                    // "AVC", "HEVC"...), donc on réutilise cette même valeur pour les deux champs.
+                    videoCodecId = videoFormat;
                     videoProfile = Field(f, 2);
                     width = (int?)ParseLong(f, 3);
                     height = (int?)ParseLong(f, 4);
@@ -230,7 +235,10 @@ public sealed class MediaInfoCliProvider : IMediaInfoProvider
                 if (!audioCaptured)
                 {
                     audioFormat = Field(f, 0);
-                    audioCodecId = Field(f, 1);
+                    // Même remarque que pour la vidéo : %CodecID% (ex. "A_MPEG/L3" en
+                    // Matroska vs "15-2" en MPEG-TS) n'est pas cohérent d'un conteneur à
+                    // l'autre. On réutilise %Format%, cohérent partout (ex. "MPEG Audio").
+                    audioCodecId = audioFormat;
                     audioBitRate = ParseLong(f, 2);
                     audioBitRateMode = Field(f, 3);
                     audioChannels = Field(f, 4);

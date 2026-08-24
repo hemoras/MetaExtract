@@ -82,8 +82,8 @@ public static class FieldCatalog
             "Duration" => FormatDuration(record.DurationMs),
             "OverallBitRate" => FormatBitRate(record.OverallBitRate),
 
-            "VideoFormat" => record.VideoFormat ?? "",
-            "VideoCodecId" => record.VideoCodecId ?? "",
+            "VideoFormat" => FormatVideoCodecName(record.VideoFormat),
+            "VideoCodecId" => FormatVideoCodecName(record.VideoCodecId),
             "VideoProfile" => record.VideoProfile ?? "",
             "Width" => record.Width?.ToString(CultureInfo.InvariantCulture) ?? "",
             "Height" => record.Height?.ToString(CultureInfo.InvariantCulture) ?? "",
@@ -141,6 +141,23 @@ public static class FieldCatalog
         if (v >= 1_000)
             return (v / 1_000).ToString("0.#", CultureInfo.InvariantCulture) + " Kb/s";
         return v.ToString("0", CultureInfo.InvariantCulture) + " b/s";
+    }
+
+    /// <summary>
+    /// Remplace les noms de norme par les noms d'encodeur plus parlants pour
+    /// la plupart des utilisateurs (ex. "AVC" -> "x264", "HEVC" -> "x265",
+    /// "MPEG-4 Visual" -> "divx"). Toute autre valeur est retournée telle quelle.
+    /// </summary>
+    private static string FormatVideoCodecName(string? format)
+    {
+        if (string.IsNullOrWhiteSpace(format)) return "";
+        return format.Trim() switch
+        {
+            "AVC" => "x264",
+            "HEVC" => "x265",
+            "MPEG-4 Visual" => "divx",
+            var other => other,
+        };
     }
 
     private static string FormatDuration(double? milliseconds)

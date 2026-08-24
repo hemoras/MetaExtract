@@ -27,6 +27,11 @@ public sealed class VideoFileRecord
 
     // --- Vidéo ---
     public string? VideoFormat { get; init; }
+    /// <summary>
+    /// Reprend volontairement la valeur de <see cref="VideoFormat"/> (et non le
+    /// %CodecID% brut de MediaInfo, non fiable selon le conteneur : ex. "27" en
+    /// MPEG-TS contre "V_MPEG4/ISO/AVC" en Matroska pour un même codec AVC).
+    /// </summary>
     public string? VideoCodecId { get; init; }
     public string? VideoProfile { get; init; }
     public int? Width { get; init; }
@@ -40,6 +45,7 @@ public sealed class VideoFileRecord
 
     // --- Audio (piste principale) ---
     public string? AudioFormat { get; init; }
+    /// <summary>Reprend volontairement <see cref="AudioFormat"/> — même raison que <see cref="VideoCodecId"/>.</summary>
     public string? AudioCodecId { get; init; }
     public long? AudioBitRate { get; init; }
     public string? AudioBitRateMode { get; init; }

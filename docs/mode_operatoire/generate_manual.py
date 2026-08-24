@@ -405,8 +405,11 @@ fields = [
         ("Bitrate global", "Débit binaire global du fichier"),
     ]),
     ("Vidéo", [
-        ("Format vidéo", "Format de la piste vidéo (AVC, HEVC...)"),
-        ("Codec vidéo", "Identifiant du codec vidéo"),
+        ("Format vidéo", "Nom du codec vidéo, sous sa forme la plus parlante (ex. x264 pour "
+         "de l'AVC/H.264, x265 pour du HEVC/H.265, divx pour du MPEG-4 Visual) — cohérent "
+         "quel que soit le format du fichier (MKV, MP4, TS...)"),
+        ("Codec vidéo", "Identique à Format vidéo (les deux affichent la même valeur fiable, "
+         "quel que soit le conteneur du fichier)"),
         ("Profil codec vidéo", "Profil du codec (High, Main...)"),
         ("Largeur (px)", "Largeur de l'image en pixels"),
         ("Hauteur (px)", "Hauteur de l'image en pixels"),
@@ -414,18 +417,26 @@ fields = [
         ("FPS", "Nombre d'images par seconde"),
         ("Bitrate vidéo", "Débit binaire de la piste vidéo"),
         ("Profondeur de couleur", "Nombre de bits par composante de couleur"),
-        ("Ratio d'affichage", "Format d'image (ex. 1.778 pour du 16:9)"),
+        ("Ratio d'affichage", "Format d'image, au format lisible (ex. 16:9, 4:3, 2.35:1)"),
         ("Type de scan", "Progressif ou entrelacé"),
         ("Sous-échantillonnage", "Chroma subsampling (ex. 4:2:0)"),
     ]),
     ("Audio", [
-        ("Format audio", "Format de la piste audio (AAC, AC-3...)"),
-        ("Codec audio", "Identifiant du codec audio"),
+        ("Format audio", "Format de la piste audio (AAC, AC-3...) — cohérent quel que soit "
+         "le conteneur du fichier"),
+        ("Codec audio", "Identique à Format audio (les deux affichent la même valeur fiable, "
+         "quel que soit le conteneur du fichier)"),
         ("Bitrate audio", "Débit binaire de la piste audio"),
         ("Mode bitrate audio", "Mode de débit (CBR, VBR...)"),
         ("Canaux audio", "Nombre de canaux (2 = stéréo, 6 = 5.1...)"),
         ("Fréquence d'échantillonnage", "Fréquence d'échantillonnage audio (kHz)"),
-        ("Langue audio", "Langue de la piste audio principale"),
+        ("Langue audio", "Langue(s) audio du fichier. Si plusieurs pistes audio ont des "
+         "langues différentes, toutes les langues distinctes sont affichées (séparées par "
+         "une virgule) ; le champ reste vide si aucune langue n'est renseignée"),
+        ("Chaîne", "Nom de la chaîne TV, déduit du titre de la piste audio en retirant un "
+         "éventuel commentaire entre parenthèses (ex. « TF1 (José Rosinski) » devient "
+         "« TF1 »). Si plusieurs pistes audio ont des chaînes différentes, elles sont "
+         "toutes affichées (séparées par une virgule)"),
         ("Nb pistes audio", "Nombre de pistes audio présentes dans le fichier"),
     ]),
     ("Divers", [
