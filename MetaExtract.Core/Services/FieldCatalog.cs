@@ -56,6 +56,12 @@ public static class FieldCatalog
         new("AudioTrackCount",    "Nb pistes audio",          FieldCategory.Audio),
 
         new("Error",              "Erreur",                   FieldCategory.FichierEtDossier),
+
+        // Déduit du nom de fichier (voir Services.FilenameMetadataService)
+        new("Saison",             "Saison",                   FieldCategory.Competition),
+        new("Manche",             "Manche",                   FieldCategory.Competition),
+        new("GrandPrix",          "Grand Prix",               FieldCategory.Competition),
+        new("RaceType",           "Type",                     FieldCategory.Competition),
     };
 
     public static MetadataFieldDefinition? Find(string key) => All.FirstOrDefault(f => f.Key == key);
@@ -112,6 +118,11 @@ public static class FieldCatalog
             "AudioTrackCount" => record.AudioTrackCount.ToString(CultureInfo.InvariantCulture),
 
             "Error" => record.Error ?? "",
+
+            "Saison" => record.Saison?.ToString(CultureInfo.InvariantCulture) ?? "",
+            "Manche" => record.Manche?.ToString(CultureInfo.InvariantCulture) ?? "",
+            "GrandPrix" => record.GrandPrix ?? "",
+            "RaceType" => record.RaceType ?? "",
 
             _ => "",
         };

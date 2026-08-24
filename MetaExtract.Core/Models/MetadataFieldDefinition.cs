@@ -9,7 +9,9 @@ public enum FieldCategory
     FichierEtDossier,
     General,
     Video,
-    Audio
+    Audio,
+    /// <summary>Champs déduits du nom de fichier (saison, manche, Grand Prix, type de séance...), voir <see cref="Services.FilenameMetadataService"/>.</summary>
+    Competition
 }
 
 /// <summary>

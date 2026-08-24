@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -16,10 +17,29 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = new MainViewModel();
 
+        ApplyVersionToTitle();
+
         ViewModel.SelectedFields.CollectionChanged += (_, _) => RebuildResultsColumns();
         RebuildResultsColumns();
 
         Closing += (_, _) => ViewModel.SaveSettings();
+    }
+
+    /// <summary>
+    /// Ajoute le numéro de version au titre de la fenêtre, à côté du nom de
+    /// l'application : "1.0.0" pour une release officielle, ou
+    /// "1.0.0-dev+20260824-1533" (numéro + date/heure de build) sinon (voir
+    /// InformationalVersion dans Directory.Build.props). En cas d'échec de
+    /// lecture (ne devrait pas arriver), le titre défini dans le XAML reste
+    /// inchangé plutôt que de planter.
+    /// </summary>
+    private void ApplyVersionToTitle()
+    {
+        var version = Assembly.GetExecutingAssembly()
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
+        if (!string.IsNullOrWhiteSpace(version))
+            Title = $"MetaExtract v{version} — Extraction de métadonnées vidéo";
     }
 
     /// <summary>

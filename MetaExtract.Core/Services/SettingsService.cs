@@ -4,11 +4,13 @@ using MetaExtract.Core.Models;
 namespace MetaExtract.Core.Services;
 
 /// <summary>
-/// Charge/sauvegarde les paramètres de l'application dans
-/// %AppData%\MetaExtract\settings.json.
+/// Charge/sauvegarde les paramètres de l'application dans un fichier
+/// settings.json situé à côté de l'exécutable (voir <see cref="AppPaths"/>).
 /// </summary>
 public sealed class SettingsService
 {
+    private const string FileName = "settings.json";
+
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     private readonly string _settingsFilePath;
@@ -21,11 +23,9 @@ public sealed class SettingsService
             return;
         }
 
-        var appDataDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "MetaExtract");
-        Directory.CreateDirectory(appDataDir);
-        _settingsFilePath = Path.Combine(appDataDir, "settings.json");
+        Directory.CreateDirectory(AppPaths.ConfigDirectory);
+        AppPaths.MigrateLegacyFileIfNeeded(FileName);
+        _settingsFilePath = Path.Combine(AppPaths.ConfigDirectory, FileName);
     }
 
     public AppSettings Load()

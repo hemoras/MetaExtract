@@ -59,12 +59,12 @@ public sealed class MediaInfoCliProvider : IMediaInfoProvider
     private static readonly Regex ChaineParenSuffixRegex = new(@"\s*\([^)]*\)\s*$", RegexOptions.Compiled);
 
     private static readonly string TemplateFilePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "MetaExtract", "mediainfo_template.txt");
+        AppPaths.ConfigDirectory, "mediainfo_template.txt");
 
     private readonly string _mediaInfoExecutablePath;
+    private readonly FilenameMetadataService _filenameMetadataService;
 
-    public MediaInfoCliProvider(string mediaInfoExecutablePath)
+    public MediaInfoCliProvider(string mediaInfoExecutablePath, FilenameMetadataService? filenameMetadataService = null)
     {
         if (string.IsNullOrWhiteSpace(mediaInfoExecutablePath))
             throw new MediaInfoNotConfiguredException(
@@ -75,6 +75,7 @@ public sealed class MediaInfoCliProvider : IMediaInfoProvider
                 $"Le fichier '{mediaInfoExecutablePath}' est introuvable. Vérifiez le chemin configuré vers mediainfo.exe.");
 
         _mediaInfoExecutablePath = mediaInfoExecutablePath;
+        _filenameMetadataService = filenameMetadataService ?? new FilenameMetadataService();
 
         // Toujours réécrit pour rester synchronisé avec TemplateContent
         // (coût négligeable, évite un template périmé après une mise à jour).
@@ -106,7 +107,8 @@ public sealed class MediaInfoCliProvider : IMediaInfoProvider
         try
         {
             string output = await RunMediaInfoAsync(filePath, cancellationToken).ConfigureAwait(false);
-            return ParseIntoRecord(filePath, fileInfo, output);
+            var record = ParseIntoRecord(filePath, fileInfo, output);
+            return ApplyFilenameDerivedFields(record, filePath);
         }
         catch (OperationCanceledException)
         {
@@ -115,8 +117,65 @@ public sealed class MediaInfoCliProvider : IMediaInfoProvider
         catch (Exception ex)
         {
             // Erreur "métier" : le fichier reste dans les résultats avec un message d'erreur.
-            return BuildBaseRecord(filePath, fileInfo, ex.Message);
+            var record = BuildBaseRecord(filePath, fileInfo, ex.Message);
+            return ApplyFilenameDerivedFields(record, filePath);
         }
+    }
+
+    /// <summary>
+    /// Complète un enregistrement (déjà rempli à partir de MediaInfo, ou du
+    /// strict minimum en cas d'erreur) avec les champs déduits du nom de
+    /// fichier : Saison, Manche, Type et Grand Prix n'ont pas d'équivalent
+    /// MediaInfo et sont donc toujours calculés ici.
+    ///
+    /// Chaîne et Langue suivent deux logiques selon le nombre de pistes
+    /// audio :
+    ///   - Cas général (0, ou ≥ 2 pistes audio) : recalculées à partir du nom
+    ///     de fichier UNIQUEMENT si MediaInfo n'a rien pu déterminer (chaîne
+    ///     vide / langue vide).
+    ///   - Piste audio UNIQUE dont le titre (une fois les parenthèses
+    ///     retirées) ne correspond à AUCUNE chaîne connue de
+    ///     chaines_langues.json : ce titre n'est pas fiable (probablement un
+    ///     texte générique comme "Nom de chaine inconnu", pas un vrai nom de
+    ///     chaîne). On l'ignore et on retente la reconnaissance à partir du
+    ///     nom de fichier (filename_rules.json) ; si elle trouve une chaîne,
+    ///     la langue lue dans les métadonnées est elle aussi remplacée par
+    ///     celle de cette chaîne (chaines_langues.json) — ex: piste audio en
+    ///     "en" avec le titre "Nom de chaine inconnu", mais "RAI" trouvé dans
+    ///     le nom de fichier -> Chaîne="RAI", Langue="it" (et non plus "en").
+    /// </summary>
+    private VideoFileRecord ApplyFilenameDerivedFields(VideoFileRecord record, string filePath)
+    {
+        var parsed = _filenameMetadataService.Parse(Path.GetFileNameWithoutExtension(filePath));
+        var grandPrix = _filenameMetadataService.ResolveGrandPrix(parsed.Saison, parsed.Manche);
+
+        bool singleTrackWithUnknownChaine = record.AudioTrackCount == 1
+            && !string.IsNullOrWhiteSpace(record.TvChannelName)
+            && _filenameMetadataService.ResolveLangue(record.TvChannelName) is null;
+
+        string? chaine;
+        string? langue;
+
+        if (singleTrackWithUnknownChaine)
+        {
+            chaine = parsed.Chaine;
+            langue = chaine is not null ? _filenameMetadataService.ResolveLangue(chaine) : record.AudioLanguage;
+        }
+        else
+        {
+            chaine = !string.IsNullOrWhiteSpace(record.TvChannelName) ? record.TvChannelName : parsed.Chaine;
+            langue = !string.IsNullOrWhiteSpace(record.AudioLanguage) ? record.AudioLanguage : _filenameMetadataService.ResolveLangue(chaine);
+        }
+
+        return record with
+        {
+            Saison = parsed.Saison,
+            Manche = parsed.Manche,
+            RaceType = parsed.RaceType,
+            GrandPrix = grandPrix,
+            TvChannelName = chaine,
+            AudioLanguage = langue,
+        };
     }
 
     private async Task<string> RunMediaInfoAsync(string filePath, CancellationToken cancellationToken)

@@ -245,6 +245,10 @@ story.append(bullets([
     "Au centre : le tableau des résultats, une fois un scan effectué.",
 ]))
 story.append(screenshot_block("fenetre_principale"))
+story.append(tip_box("Numéro de version", [
+    "Le numéro de version de MetaExtract est affiché dans le titre de la fenêtre, à côté "
+    "du nom de l'application — utile à communiquer en cas de besoin d'assistance.",
+]))
 story.append(rule())
 
 # ---------------------------------------------------------------- 5. Ajouter des dossiers
@@ -292,6 +296,20 @@ story.append(tip_box("Bon à savoir", [
     "Le <b>nom du fichier</b> est toujours affiché en première colonne et ne peut pas "
     "être retiré : c'est le seul champ obligatoire.",
     "Ce choix de colonnes est mémorisé automatiquement d'une utilisation à l'autre.",
+]))
+story.append(tip_box("Informations déduites du nom de fichier", [
+    "En plus des informations lues dans le fichier vidéo, MetaExtract peut proposer "
+    "<b>Saison</b>, <b>Manche</b>, <b>Grand Prix</b> et <b>Type</b> (de séance), déduites "
+    "du <b>nom du fichier</b> lui-même. Plusieurs formats de nom de fichier sont reconnus "
+    "par défaut, par ex. « 01 GP Australie 1998 (TF1) », « 01 GP Australie 1998 - "
+    "Qualifications (TF1) », « 08 GP Canada 2006 RAI » (chaîne sans parenthèses), ou encore "
+    "« Formula1.1998.Round01.Australia.Race.TF1.1080p.H264.French ».",
+    "Les colonnes <b>Chaîne</b> et <b>Langue audio</b> utilisent en priorité les "
+    "informations lues dans le fichier vidéo, et se rabattent sur le nom de fichier "
+    "seulement si nécessaire (voir le détail à l'Annexe).",
+    "Les règles de reconnaissance sont modifiables (fichiers texte accessibles depuis "
+    "<b>Paramètres → Ouvrir le dossier de configuration...</b>), afin de s'adapter à "
+    "votre propre façon de nommer vos fichiers.",
 ]))
 story.append(rule())
 
@@ -432,12 +450,31 @@ fields = [
         ("Fréquence d'échantillonnage", "Fréquence d'échantillonnage audio (kHz)"),
         ("Langue audio", "Langue(s) audio du fichier. Si plusieurs pistes audio ont des "
          "langues différentes, toutes les langues distinctes sont affichées (séparées par "
-         "une virgule) ; le champ reste vide si aucune langue n'est renseignée"),
-        ("Chaîne", "Nom de la chaîne TV, déduit du titre de la piste audio en retirant un "
-         "éventuel commentaire entre parenthèses (ex. « TF1 (José Rosinski) » devient "
-         "« TF1 »). Si plusieurs pistes audio ont des chaînes différentes, elles sont "
-         "toutes affichées (séparées par une virgule)"),
+         "une virgule). Si le fichier ne renseigne aucune langue, une langue déduite du nom "
+         "de fichier peut être utilisée en remplacement (voir « Informations déduites du "
+         "nom de fichier », étape 6) ; sinon le champ reste vide. Cas particulier d'une "
+         "piste audio unique dont le nom de chaîne n'est pas reconnu (voir ci-dessous) : la "
+         "langue lue dans le fichier est alors remplacée par celle de la chaîne retrouvée "
+         "dans le nom de fichier, si elle est identifiée"),
+        ("Chaîne", "Nom de la chaîne TV, déduit en priorité du titre de la piste audio en "
+         "retirant un éventuel commentaire entre parenthèses (ex. « TF1 (José Rosinski) » "
+         "devient « TF1 »). Si plusieurs pistes audio ont des chaînes différentes, elles "
+         "sont toutes affichées (séparées par une virgule). Si le fichier ne renseigne "
+         "aucune chaîne exploitable, une chaîne déduite du nom de fichier peut être "
+         "utilisée en remplacement. Cas particulier d'une piste audio unique : si son nom "
+         "de chaîne ne correspond à aucune chaîne connue (probablement un texte générique, "
+         "pas un vrai nom de chaîne), il est ignoré au profit de celle retrouvée dans le nom "
+         "de fichier"),
         ("Nb pistes audio", "Nombre de pistes audio présentes dans le fichier"),
+    ]),
+    ("Compétition (déduit du nom de fichier)", [
+        ("Saison", "Année de la saison, déduite du nom de fichier (ex. 1998)"),
+        ("Manche", "Numéro de la manche/course dans la saison, déduit du nom de fichier"),
+        ("Grand Prix", "Nom du Grand Prix, retrouvé à partir de la Saison et de la Manche "
+         "dans une table de correspondance modifiable (et non déduit directement du nom de "
+         "fichier, qui peut varier pour un même Grand Prix)"),
+        ("Type", "Type de séance : « Course » par défaut, ou une autre valeur (ex. "
+         "« Qualifications ») si elle est précisée dans le nom de fichier"),
     ]),
     ("Divers", [
         ("Erreur", "Message d'erreur si l'analyse du fichier a échoué"),

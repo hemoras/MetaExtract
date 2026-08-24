@@ -9,8 +9,15 @@ namespace MetaExtract.Core.Models;
 ///
 /// L'indexeur `this[key]` permet le binding WPF dynamique
 /// (Binding "[Key]") sans avoir à générer du code par colonne.
+///
+/// Défini comme `record` (et non `class`) uniquement pour bénéficier de
+/// l'expression `with { ... }` : <see cref="Services.MediaInfoCliProvider"/>
+/// construit d'abord un enregistrement à partir de MediaInfo, puis en dérive
+/// une copie enrichie des champs déduits du nom de fichier (voir
+/// <see cref="Services.FilenameMetadataService"/>) sans avoir à recopier
+/// manuellement chacune des propriétés existantes.
 /// </summary>
-public sealed class VideoFileRecord
+public sealed record VideoFileRecord
 {
     // --- Système de fichiers ---
     public required string FileName { get; init; }
@@ -53,11 +60,31 @@ public sealed class VideoFileRecord
     public long? AudioSampleRate { get; init; }
     public string? AudioLanguage { get; init; }
     public int AudioTrackCount { get; init; }
-    /// <summary>Chaîne(s) TV déduite(s) du champ Audio/Title (ex: "TF1 (José Rosinski)" → "TF1"), une par piste distincte.</summary>
+    /// <summary>
+    /// Chaîne(s) TV, une par piste distincte. Déduite en priorité du champ
+    /// Audio/Title (ex: "TF1 (José Rosinski)" → "TF1") ; si aucune piste
+    /// audio ne renseigne de titre exploitable, on retombe sur la chaîne
+    /// déduite du nom de fichier (voir <see cref="Services.FilenameMetadataService"/>).
+    /// </summary>
     public string? TvChannelName { get; init; }
 
     /// <summary>Message d'erreur si l'extraction a échoué pour ce fichier (le fichier reste listé).</summary>
     public string? Error { get; init; }
+
+    // --- Déduit du nom de fichier (voir Services.FilenameMetadataService) ---
+    // Ces champs n'ont pas d'équivalent dans les métadonnées MediaInfo : ils
+    // sont calculés uniquement à partir du nom du fichier, selon les règles
+    // définies dans filename_rules.json (à côté de l'exécutable).
+    public int? Saison { get; init; }
+    public int? Manche { get; init; }
+    /// <summary>
+    /// Résolu via grands_prix.json (à côté de l'exécutable ; saison + manche ->
+    /// nom du Grand Prix), plutôt que déduit directement du nom de fichier
+    /// (qui peut varier pour un même Grand Prix : "Hollande" / "Pays-Bas"...).
+    /// </summary>
+    public string? GrandPrix { get; init; }
+    /// <summary>Type de séance (Course par défaut, ou Qualifications/Essais... si précisé après un tiret dans le nom de fichier).</summary>
+    public string? RaceType { get; init; }
 
     /// <summary>Permet le binding WPF dynamique : Binding Path="[NomDeLaCle]".</summary>
     public string this[string fieldKey] => Services.FieldCatalog.GetDisplayValue(this, fieldKey);

@@ -1,7 +1,7 @@
 namespace MetaExtract.Core.Models;
 
 /// <summary>
-/// Paramètres persistés de l'application (fichier JSON dans %AppData%).
+/// Paramètres persistés de l'application (fichier JSON à côté de l'exécutable).
 /// </summary>
 public sealed class AppSettings
 {

@@ -12,13 +12,31 @@
         - PATCH : correction de bug, rétrocompatible
 
       Ne pas modifier cette valeur à la main : elle est incrémentée
-      automatiquement par scripts\release.ps1 au moment de créer une
+      automatiquement par scripts/release.sh au moment de créer une
       nouvelle release (tag git vX.Y.Z).
     -->
     <VersionPrefix>1.0.0</VersionPrefix>
     <Version>$(VersionPrefix)</Version>
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <FileVersion>$(VersionPrefix).0</FileVersion>
+
+    <!--
+      InformationalVersion : affichée dans le titre de la fenêtre principale
+      (voir MainWindow.xaml.cs), à côté du nom de l'application.
+        - Release officielle (publiée via scripts/release.sh, qui passe
+          -p:IsReleaseBuild=true) : uniquement le numéro de version, ex "1.0.0".
+        - Build en cours (dotnet build/run/publish sans passer par
+          scripts/release.sh) : numéro de version + date/heure de build, ex
+          "1.0.0-dev+20260824-1533", pour identifier facilement de quand
+          date l'exécutable utilisé.
+      IncludeSourceRevisionInInformationalVersion=false évite que le SDK
+      rajoute automatiquement le hash du commit git à la suite (on gère
+      nous-mêmes le suffixe de build ci-dessous).
+    -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <BuildTimestamp Condition="'$(BuildTimestamp)' == ''">$([System.DateTime]::Now.ToString(yyyyMMdd-HHmm))</BuildTimestamp>
+    <InformationalVersion Condition="'$(IsReleaseBuild)' == 'true'">$(VersionPrefix)</InformationalVersion>
+    <InformationalVersion Condition="'$(IsReleaseBuild)' != 'true'">$(VersionPrefix)-dev+$(BuildTimestamp)</InformationalVersion>
   </PropertyGroup>
 
 </Project>
