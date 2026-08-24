@@ -80,11 +80,12 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    private static List<string> DefaultFieldKeys() => new()
-    {
-        "FolderPath", "Resolution", "FrameRate", "Duration", "FileSize",
-        "ContainerFormat", "VideoCodecId", "VideoBitRate", "AudioCodecId", "AudioBitRate"
-    };
+    // Présélection par défaut au tout premier lancement (settings.json absent
+    // ou sans SelectedFieldKeys) : la même liste fixe que le bouton "Export
+    // complet..." (voir FieldCatalog.FullExportFieldKeys), sans le nom de
+    // fichier qui est de toute façon toujours forcé en première position.
+    private static List<string> DefaultFieldKeys() =>
+        FieldCatalog.FullExportFieldKeys.Where(k => k != FieldCatalog.FileNameKey).ToList();
 
     public void SaveSettings()
     {
@@ -253,4 +254,12 @@ public partial class MainViewModel : ObservableObject
 
     public void ExportExcel(string path) =>
         ExportService.ExportToExcel(Results, SelectedFields.ToList(), path);
+
+    // "Export complet..." : ignore volontairement SelectedFields, cf.
+    // FieldCatalog.FullExportFieldKeys.
+    public void ExportFullCsv(string path) =>
+        ExportService.ExportToCsv(Results, FieldCatalog.FullExportFields.ToList(), path);
+
+    public void ExportFullExcel(string path) =>
+        ExportService.ExportToExcel(Results, FieldCatalog.FullExportFields.ToList(), path);
 }

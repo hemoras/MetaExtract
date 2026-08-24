@@ -1,3 +1,4 @@
+using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -179,6 +180,46 @@ public partial class MainWindow : Window
             catch (Exception ex)
             {
                 MessageBox.Show(this, $"Échec de l'export Excel : {ex.Message}", "Export Excel",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Contrairement à "Export CSV..."/"Export Excel...", n'utilise jamais
+    /// les colonnes sélectionnées par l'utilisateur : la liste de colonnes
+    /// est fixe (voir <see cref="MetaExtract.Core.Services.FieldCatalog.FullExportFieldKeys"/>).
+    /// Le format (CSV ou Excel) est déterminé par l'extension choisie dans
+    /// la boîte de dialogue.
+    /// </summary>
+    private void ExportFullButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.Results.Count == 0)
+        {
+            MessageBox.Show(this, "Aucun résultat à exporter. Lancez d'abord un scan.", "Export complet",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new SaveFileDialog
+        {
+            Title = "Export complet",
+            Filter = "Classeur Excel (*.xlsx)|*.xlsx|Fichier CSV (*.csv)|*.csv",
+            FileName = "metadonnees_video_complet.xlsx",
+        };
+
+        if (dialog.ShowDialog(this) == true)
+        {
+            try
+            {
+                if (string.Equals(Path.GetExtension(dialog.FileName), ".csv", StringComparison.OrdinalIgnoreCase))
+                    ViewModel.ExportFullCsv(dialog.FileName);
+                else
+                    ViewModel.ExportFullExcel(dialog.FileName);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Échec de l'export complet : {ex.Message}", "Export complet",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }

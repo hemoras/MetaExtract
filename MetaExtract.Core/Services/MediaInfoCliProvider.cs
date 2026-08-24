@@ -146,7 +146,7 @@ public sealed class MediaInfoCliProvider : IMediaInfoProvider
     /// </summary>
     private VideoFileRecord ApplyFilenameDerivedFields(VideoFileRecord record, string filePath)
     {
-        var parsed = _filenameMetadataService.Parse(Path.GetFileNameWithoutExtension(filePath));
+        var parsed = _filenameMetadataService.Parse(Path.GetFileNameWithoutExtension(filePath), filePath);
         var grandPrix = _filenameMetadataService.ResolveGrandPrix(parsed.Saison, parsed.Manche);
 
         bool singleTrackWithUnknownChaine = record.AudioTrackCount == 1
@@ -346,7 +346,10 @@ public sealed class MediaInfoCliProvider : IMediaInfoProvider
             Width = width,
             Height = height,
             FrameRate = frameRate,
-            VideoBitRate = videoBitRate,
+            // Certains fichiers (notamment en MPEG-TS) ne renvoient pas de
+            // %BitRate% pour la piste vidéo elle-même : on se rabat alors sur
+            // le débit global du fichier, qui reste une valeur exploitable.
+            VideoBitRate = videoBitRate ?? overallBitRate,
             VideoBitDepth = videoBitDepth,
             AspectRatio = aspectRatio,
             ScanType = scanType,

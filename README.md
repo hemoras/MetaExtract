@@ -19,10 +19,28 @@ métadonnées d'un ou plusieurs dossiers de vidéos, à l'aide de **MediaInfo**
   nombre de pistes audio, ainsi que saison, manche, Grand Prix et type de
   séance déduits du **nom de fichier** (voir « Personnaliser la
   reconnaissance des noms de fichiers » ci-dessous).
+- La **langue audio** est affichée avec son nom complet (ex: « Français »
+  plutôt que « fr »), via `langues.json` — voir plus bas.
+- Si le format vidéo/audio brut renvoyé par MediaInfo est peu lisible, il
+  est simplifié à l'affichage (ex: « MPEG Video » → « MPEG », « MPEG
+  Audio » → « MP3 »). Le bitrate vidéo se rabat sur le bitrate global du
+  fichier quand MediaInfo ne renvoie pas de bitrate spécifique à la piste
+  vidéo (fréquent en MPEG-TS).
 - Export **CSV** ou **Excel (.xlsx)**, au choix, avec les colonnes
-  sélectionnées dans l'ordre choisi.
+  sélectionnées dans l'ordre choisi (boutons **Export CSV...** / **Export
+  Excel...**), ou **Export complet...** : un troisième bouton qui exporte
+  systématiquement un ensemble fixe de colonnes (Nom du fichier, Saison,
+  Manche, Grand Prix, Type, Durée, Taille du fichier, Chaîne, Langue
+  audio, Résolution, FPS, Codec vidéo, Bitrate vidéo, Codec audio, Bitrate
+  audio, Type de scan, Ratio d'affichage, Dossier, Date de modification),
+  quelles que soient les colonnes actuellement sélectionnées à l'écran —
+  pratique pour un export complet et reproductible. Le format (CSV ou
+  Excel) se choisit via l'extension dans la boîte de dialogue. C'est aussi
+  cet ensemble de colonnes qui est présélectionné par défaut au tout
+  premier lancement de l'application.
 - Les dossiers, les colonnes choisies et le chemin vers `mediainfo.exe`
-  sont mémorisés d'une session à l'autre.
+  sont mémorisés d'une session à l'autre (aucun dossier n'est présélectionné
+  au tout premier lancement : la liste démarre vide).
 
 ## Prérequis
 
@@ -39,20 +57,22 @@ métadonnées d'un ou plusieurs dossiers de vidéos, à l'aide de **MediaInfo**
 
 En plus des métadonnées lues par MediaInfo, MetaExtract déduit six
 informations du **nom de fichier** lui-même : Saison, Manche, Grand Prix,
-Type (de séance), Chaîne et Langue, via trois fichiers JSON en texte clair,
-**dans le même dossier que `MetaExtract.App.exe`** (facile à retrouver, et
-compatible avec une utilisation "portable"). Seul `filename_rules.json` est
-propre à la convention de nommage de chacun (généré avec un exemple minimal
-au premier lancement) ; `grands_prix.json` et `chaines_langues.json` sont
-des données de référence maintenues dans le projet et livrées déjà
-complètes à chaque build (voir le détail de chacun plus bas) :
+Type (de séance), Chaîne et Langue, via quatre fichiers JSON en texte
+clair, **dans le même dossier que `MetaExtract.App.exe`** (facile à
+retrouver, et compatible avec une utilisation "portable"). Seul
+`filename_rules.json` est propre à la convention de nommage de chacun
+(généré avec un exemple minimal au premier lancement) ; `grands_prix.json`,
+`chaines_langues.json` et `langues.json` sont des données de référence
+maintenues dans le projet et livrées déjà complètes à chaque build (voir le
+détail de chacun plus bas) :
 
 ```
 <dossier de MetaExtract.App.exe>\
 ├── settings.json           Paramètres généraux (chemin mediainfo.exe, dossiers, colonnes...)
 ├── filename_rules.json     Règles de reconnaissance (regex nommées)
 ├── grands_prix.json        (saison, manche) -> nom du Grand Prix
-└── chaines_langues.json    chaîne -> langue principale
+├── chaines_langues.json    chaîne -> langue principale
+└── langues.json            code de langue -> nom complet (affichage)
 ```
 
 Accès rapide à ce dossier : bouton **« Ouvrir le dossier de
@@ -127,6 +147,21 @@ Comportement de la seconde règle (format Kodi/scène, ex:
 - `types` traduit les codes de séance du nom de fichier (`Race`, `FP1`,
   `Qualifying.Highlights`...) vers leur libellé français.
 
+**Repli si aucune règle ne correspond** : plutôt que de renvoyer des
+métadonnées vides, MetaExtract tente alors une détection minimale :
+- **Saison** : premier nombre à 4 chiffres isolé du nom de fichier compris
+  entre 1950 et l'année en cours (ex. un « 2160 » de résolution 4K, hors de
+  cette plage, est ignoré). Si le nom de fichier n'en contient aucun, la
+  même recherche est refaite dans le chemin du dossier parent.
+- **Chaîne** : si le nom de fichier se termine par une expression entre
+  parenthèses (parenthèse fermante optionnelle), cette expression — ou
+  uniquement sa partie après un tiret si elle en contient un (ex.
+  `(AFAVA - Motors TV)` → `Motors TV`) — est recherchée telle quelle dans
+  `chaines_langues.json` ; si elle y figure, elle devient la chaîne
+  détectée (la langue associée est alors résolue normalement, voir
+  ci-dessous).
+- Manche et Type restent vides dans ce cas.
+
 ### `grands_prix.json`
 
 Le nom du Grand Prix n'est volontairement **pas** extrait du nom de
@@ -163,6 +198,22 @@ chaque build :
 ]
 ```
 
+### `langues.json`
+
+Donne le nom complet affiché pour chaque code de langue (ex: « fr » →
+« Français »), quelle que soit l'origine du code (métadonnées MediaInfo ou
+repli via `chaines_langues.json`/nom de fichier). Comme les deux fichiers
+précédents, c'est une donnée de référence maintenue dans le projet
+(`MetaExtract.App\langues.json`) et copiée à côté de l'exécutable à chaque
+build. Un code absent de ce fichier est affiché tel quel (sans planter) :
+
+```json
+[
+  { "langue": "fr", "nom_langue": "Français" },
+  { "langue": "en", "nom_langue": "Anglais" }
+]
+```
+
 ### Colonnes Chaîne et Langue : priorité aux métadonnées
 
 Les colonnes **Chaîne** et **Langue audio** utilisent en priorité les
@@ -188,10 +239,10 @@ Cette règle ne s'applique qu'avec une seule piste audio ; à partir de deux
 pistes, le comportement standard (priorité aux métadonnées, repli simple
 si absentes) s'applique normalement.
 
-Un fichier JSON absent est recréé avec ses valeurs par défaut au lancement
-suivant. Un fichier présent mais invalide (JSON mal formé) ne bloque
-jamais un scan : les valeurs par défaut sont utilisées pour cette
-exécution, sans écraser votre fichier sur disque.
+Un fichier JSON absent (parmi les quatre ci-dessus) est recréé avec ses
+valeurs par défaut au lancement suivant. Un fichier présent mais invalide
+(JSON mal formé) ne bloque jamais un scan : les valeurs par défaut sont
+utilisées pour cette exécution, sans écraser votre fichier sur disque.
 
 ## Structure du projet
 
@@ -199,12 +250,13 @@ exécution, sans écraser votre fichier sur disque.
 MetaExtract.sln
 ├── MetaExtract.Core/     Logique métier, indépendante de l'UI (testable, multiplateforme)
 │   ├── Models/           VideoFileRecord, MetadataFieldDefinition, AppSettings,
-│   │                     FilenameParsingRule, GrandPrixEntry, ChaineLangueEntry
+│   │                     FilenameParsingRule, GrandPrixEntry, ChaineLangueEntry, LangueEntry
 │   └── Services/
 │       ├── FieldCatalog.cs             Catalogue des champs + formatage d'affichage
 │       ├── IMediaInfoProvider.cs       Abstraction de la source de métadonnées
 │       ├── MediaInfoCliProvider.cs     Implémentation via mediainfo.exe --Output=file://...
 │       ├── FilenameMetadataService.cs  Saison/Manche/Type/Chaîne/Grand Prix/Langue déduits du nom de fichier
+│       ├── LangueNameResolver.cs       Code de langue -> nom complet (affichage), via langues.json
 │       ├── FolderScanner.cs            Parcours récursif des dossiers
 │       ├── MediaScanOrchestrator.cs    Orchestration scan + parallélisme + progression
 │       ├── ExportService.cs            Export CSV / Excel (ClosedXML)
@@ -214,7 +266,8 @@ MetaExtract.sln
     ├── Views/                 MainWindow, SettingsWindow
     ├── ViewModels/            MainViewModel (CommunityToolkit.Mvvm)
     ├── grands_prix.json       Donnée de référence (historique F1), copiée à côté de l'exe au build
-    └── chaines_langues.json   Donnée de référence (chaîne -> langue), copiée à côté de l'exe au build
+    ├── chaines_langues.json   Donnée de référence (chaîne -> langue), copiée à côté de l'exe au build
+    └── langues.json           Donnée de référence (code langue -> nom complet), copiée à côté de l'exe au build
 ```
 
 `IMediaInfoProvider` est une interface : l'implémentation fournie

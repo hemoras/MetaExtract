@@ -18,8 +18,9 @@
                     Command="{Binding StartScanCommand}"/>
             <Button DockPanel.Dock="Left" Content="Annuler" Padding="14,5" Margin="0,0,16,0"
                     Command="{Binding CancelScanCommand}"/>
-            <Button DockPanel.Dock="Right" Content="Exporter Excel..." Padding="10,5" Margin="6,0,0,0" Click="ExportExcelButton_Click"/>
-            <Button DockPanel.Dock="Right" Content="Exporter CSV..." Padding="10,5" Click="ExportCsvButton_Click"/>
+            <Button DockPanel.Dock="Right" Content="Export complet..." Padding="10,5" Margin="6,0,0,0" Click="ExportFullButton_Click"/>
+            <Button DockPanel.Dock="Right" Content="Export Excel..." Padding="10,5" Margin="6,0,0,0" Click="ExportExcelButton_Click"/>
+            <Button DockPanel.Dock="Right" Content="Export CSV..." Padding="10,5" Click="ExportCsvButton_Click"/>
         </DockPanel>
 
         <Grid Grid.Row="1">

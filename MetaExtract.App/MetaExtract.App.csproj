@@ -51,18 +51,20 @@
   <ItemGroup>
     <!--
       Valeurs par défaut de grands_prix.json (saison + manche -> nom du
-      Grand Prix) et chaines_langues.json (chaîne -> langue), maintenues
-      dans le projet et livrées telles quelles à côté de l'exécutable à
-      chaque build/publish (PreserveNewest : recopiées si le fichier source
-      est modifié, par ex. lors d'une mise à jour pour une nouvelle saison
-      ou une nouvelle chaîne). Contrairement à filename_rules.json (propre à
-      la convention de nommage de chaque utilisateur), ces deux fichiers
-      sont des données de référence : l'utilisateur n'a normalement pas
-      besoin d'y toucher, les mises à jour se faisant via une nouvelle
-      version de l'application. Voir FilenameMetadataService.
+      Grand Prix), chaines_langues.json (chaîne -> langue) et langues.json
+      (code langue -> nom complet), maintenues dans le projet et livrées
+      telles quelles à côté de l'exécutable à chaque build/publish
+      (PreserveNewest : recopiées si le fichier source est modifié, par ex.
+      lors d'une mise à jour pour une nouvelle saison ou une nouvelle
+      chaîne). Contrairement à filename_rules.json (propre à la convention
+      de nommage de chaque utilisateur), ces trois fichiers sont des
+      données de référence : l'utilisateur n'a normalement pas besoin d'y
+      toucher, les mises à jour se faisant via une nouvelle version de
+      l'application. Voir FilenameMetadataService et LangueNameResolver.
     -->
     <None Include="grands_prix.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="chaines_langues.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="langues.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

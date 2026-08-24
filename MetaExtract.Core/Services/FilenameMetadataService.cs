@@ -56,6 +56,14 @@ public sealed class FilenameMetadataService
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
+    // Nombre à 4 chiffres isolé (ni précédé ni suivi d'un autre chiffre) -
+    // utilisé par le repli de détection de saison, cf. ParseFallback().
+    private static readonly Regex FourDigitNumberRegex = new(@"(?<!\d)\d{4}(?!\d)", RegexOptions.Compiled);
+
+    // Expression entre parenthèses en toute fin de chaîne ; la parenthèse
+    // fermante est optionnelle (cf. ExtractTrailingParenExpression()).
+    private static readonly Regex TrailingParenExpressionRegex = new(@"\(([^()]*)\)?\s*$", RegexOptions.Compiled);
+
     private readonly List<FilenameParsingRule> _rules;
     private readonly List<GrandPrixEntry> _grandsPrix;
     private readonly List<ChaineLangueEntry> _chainesLangues;
@@ -83,10 +91,17 @@ public sealed class FilenameMetadataService
 
     /// <summary>
     /// Analyse un nom de fichier (SANS extension) selon la première règle de
-    /// <c>filename_rules.json</c> qui correspond. Retourne des valeurs nulles
-    /// si aucune règle ne correspond.
+    /// <c>filename_rules.json</c> qui correspond. Si aucune règle ne
+    /// correspond, retombe sur une détection heuristique minimale (voir
+    /// <see cref="ParseFallback"/>) plutôt que de tout renvoyer à null.
     /// </summary>
-    public FilenameParseResult Parse(string fileNameWithoutExtension)
+    /// <param name="fileNameWithoutExtension">Nom du fichier, sans extension.</param>
+    /// <param name="fullFilePath">
+    /// Chemin complet du fichier (optionnel). Utilisé uniquement par le
+    /// repli heuristique, pour chercher une année dans le dossier parent
+    /// quand le nom de fichier lui-même n'en contient pas.
+    /// </param>
+    public FilenameParseResult Parse(string fileNameWithoutExtension, string? fullFilePath = null)
     {
         foreach (var rule in _rules)
         {
@@ -118,7 +133,89 @@ public sealed class FilenameMetadataService
             return new FilenameParseResult(saison, manche, type, chaine);
         }
 
-        return new FilenameParseResult(null, null, null, null);
+        return ParseFallback(fileNameWithoutExtension, fullFilePath);
+    }
+
+    /// <summary>
+    /// Repli utilisé quand aucune règle de <c>filename_rules.json</c> ne
+    /// correspond au nom de fichier :
+    ///   - Saison : premier nombre à 4 chiffres du nom de fichier compris
+    ///     entre 1950 et l'année en cours. Si aucun nombre valide n'est
+    ///     trouvé dans le nom de fichier, on cherche de la même façon dans
+    ///     le chemin du dossier parent (<paramref name="fullFilePath"/>).
+    ///   - Chaîne : si le nom de fichier se termine par une expression entre
+    ///     parenthèses (fermante optionnelle, ex: "... (AFAVA - Motors TV"),
+    ///     et que cette expression contient un tiret, on ne garde que la
+    ///     partie après le tiret (ex: "AFAVA - Motors TV" -> "Motors TV").
+    ///     Cette expression (ou sa partie après le tiret) est alors
+    ///     recherchée telle quelle dans chaines_langues.json ; si trouvée,
+    ///     elle devient la chaîne détectée (la langue associée est résolue
+    ///     séparément via <see cref="ResolveLangue"/> par l'appelant).
+    /// Manche et type restent toujours null dans ce repli.
+    /// </summary>
+    private FilenameParseResult ParseFallback(string fileNameWithoutExtension, string? fullFilePath)
+    {
+        var saison = FindPlausibleYear(fileNameWithoutExtension);
+        if (saison is null && fullFilePath is not null)
+            saison = FindPlausibleYear(Path.GetDirectoryName(fullFilePath));
+
+        string? chaine = null;
+        var candidate = ExtractTrailingParenExpression(fileNameWithoutExtension);
+        if (candidate is not null)
+        {
+            foreach (var entry in _chainesLangues)
+            {
+                if (string.Equals(entry.Chaine?.Trim(), candidate, StringComparison.OrdinalIgnoreCase))
+                {
+                    chaine = entry.Chaine;
+                    break;
+                }
+            }
+        }
+
+        return new FilenameParseResult(saison, null, null, chaine);
+    }
+
+    /// <summary>
+    /// Recherche le premier nombre isolé à 4 chiffres de <paramref name="text"/>
+    /// compris entre 1950 et l'année en cours (bornes incluses). "Isolé"
+    /// signifie non précédé/suivi d'un autre chiffre (pour ne pas confondre
+    /// avec un nombre plus long, ex. un débit).
+    /// </summary>
+    private static int? FindPlausibleYear(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return null;
+
+        var currentYear = DateTime.Now.Year;
+        foreach (Match m in FourDigitNumberRegex.Matches(text))
+        {
+            if (int.TryParse(m.Value, out var year) && year >= 1950 && year <= currentYear)
+                return year;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Si <paramref name="fileNameWithoutExtension"/> se termine par une
+    /// expression entre parenthèses (la parenthèse fermante est optionnelle,
+    /// certains noms de fichiers en étant dépourvus), retourne cette
+    /// expression - ou uniquement la partie après le tiret si elle en
+    /// contient un (ex: "AFAVA - Motors TV" -> "Motors TV"). Retourne null
+    /// si le nom ne se termine pas par une telle expression.
+    /// </summary>
+    private static string? ExtractTrailingParenExpression(string fileNameWithoutExtension)
+    {
+        var match = TrailingParenExpressionRegex.Match(fileNameWithoutExtension);
+        if (!match.Success) return null;
+
+        var expression = match.Groups[1].Value.Trim();
+        if (expression.Length == 0) return null;
+
+        var dashIndex = expression.IndexOf('-');
+        if (dashIndex >= 0)
+            expression = expression[(dashIndex + 1)..].Trim();
+
+        return expression.Length == 0 ? null : expression;
     }
 
     /// <summary>Résout le nom du Grand Prix pour une saison + manche données (null si absent de grands_prix.json).</summary>

@@ -69,6 +69,26 @@ public static class FieldCatalog
     public static readonly MetadataFieldDefinition Mandatory = All.First(f => f.IsMandatory);
 
     /// <summary>
+    /// Liste fixe (clés, dans l'ordre d'affichage) des colonnes utilisées
+    /// par le bouton "Export complet..." de la fenêtre principale -
+    /// indépendante de la sélection de colonnes faite par l'utilisateur.
+    /// C'est aussi la présélection par défaut des colonnes à afficher lors
+    /// du tout premier lancement de l'application (voir
+    /// MainViewModel.DefaultFieldKeys()).
+    /// </summary>
+    public static readonly IReadOnlyList<string> FullExportFieldKeys = new List<string>
+    {
+        FileNameKey, "Saison", "Manche", "GrandPrix", "RaceType", "Duration",
+        "FileSize", "TvChannel", "AudioLanguage", "Resolution", "FrameRate",
+        "VideoCodecId", "VideoBitRate", "AudioCodecId", "AudioBitRate",
+        "ScanType", "AspectRatio", "FolderPath", "DateModified",
+    };
+
+    /// <summary>Résolution de <see cref="FullExportFieldKeys"/> en définitions de champs complètes.</summary>
+    public static readonly IReadOnlyList<MetadataFieldDefinition> FullExportFields =
+        FullExportFieldKeys.Select(Find).Where(f => f is not null).Select(f => f!).ToList();
+
+    /// <summary>
     /// Retourne la valeur formatée (prête à afficher / exporter) d'un
     /// champ pour un enregistrement donné. Ne lève jamais d'exception :
     /// une clé inconnue ou une valeur absente retourne une chaîne vide.
@@ -113,7 +133,7 @@ public static class FieldCatalog
             "AudioSampleRate" => record.AudioSampleRate.HasValue
                 ? (record.AudioSampleRate.Value / 1000.0).ToString("0.#", CultureInfo.InvariantCulture) + " kHz"
                 : "",
-            "AudioLanguage" => record.AudioLanguage ?? "",
+            "AudioLanguage" => FormatAudioLanguage(record.AudioLanguage),
             "TvChannel" => record.TvChannelName ?? "",
             "AudioTrackCount" => record.AudioTrackCount.ToString(CultureInfo.InvariantCulture),
 
@@ -169,6 +189,20 @@ public static class FieldCatalog
             "MPEG-4 Visual" => "divx",
             var other => other,
         };
+    }
+
+    /// <summary>
+    /// Remplace chaque code de langue (ex: "fr") par son nom complet (ex:
+    /// "Français") via <see cref="LangueNameResolver"/> - un fichier peut
+    /// avoir plusieurs pistes audio dans des langues différentes, agrégées
+    /// dans <see cref="VideoFileRecord.AudioLanguage"/> sous la forme
+    /// "en, fr" : chaque code est alors résolu individuellement.
+    /// </summary>
+    private static string FormatAudioLanguage(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return "";
+        var codes = raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return string.Join(", ", codes.Select(LangueNameResolver.Resolve));
     }
 
     private static string FormatDuration(double? milliseconds)
