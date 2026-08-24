@@ -304,6 +304,11 @@ story.append(tip_box("Informations déduites du nom de fichier", [
     "par défaut, par ex. « 01 GP Australie 1998 (TF1) », « 01 GP Australie 1998 - "
     "Qualifications (TF1) », « 08 GP Canada 2006 RAI » (chaîne sans parenthèses), ou encore "
     "« Formula1.1998.Round01.Australia.Race.TF1.1080p.H264.French ».",
+    "Si aucun de ces formats ne correspond, MetaExtract tente une détection minimale : la "
+    "<b>Saison</b> est déduite d'une année plausible (entre 1950 et l'année en cours) "
+    "trouvée dans le nom du fichier, ou à défaut dans le chemin de son dossier ; la "
+    "<b>Chaîne</b> peut être retrouvée si le nom de fichier se termine par une mention "
+    "entre parenthèses correspondant à une chaîne connue.",
     "Les colonnes <b>Chaîne</b> et <b>Langue audio</b> utilisent en priorité les "
     "informations lues dans le fichier vidéo, et se rabattent sur le nom de fichier "
     "seulement si nécessaire (voir le détail à l'Annexe).",
@@ -344,20 +349,29 @@ story.append(rule())
 # ---------------------------------------------------------------- 9. Export
 story.append(section_title(9, "Exporter les résultats"))
 story.append(Paragraph(
-    "Une fois l'analyse terminée, les résultats peuvent être exportés dans un fichier :",
+    "Une fois l'analyse terminée, les résultats peuvent être exportés dans un fichier, de "
+    "deux façons différentes :",
     styles["Body"],
 ))
 story.append(numbered_steps([
-    "Cliquer sur <b>« Exporter CSV... »</b> ou <b>« Exporter Excel... »</b> selon le "
-    "format souhaité.",
+    "Cliquer sur <b>« Export CSV... »</b> ou <b>« Export Excel... »</b> selon le format "
+    "souhaité : le fichier exporté contient alors exactement les colonnes actuellement "
+    "sélectionnées à l'écran, dans le même ordre.",
     "Choisir l'emplacement et le nom du fichier dans la boîte de dialogue, puis valider.",
 ]))
 story.append(screenshot_block("export"))
-story.append(Paragraph(
-    "Le fichier exporté contient exactement les colonnes actuellement sélectionnées, "
-    "dans le même ordre que celui affiché à l'écran.",
-    styles["Body"],
-))
+story.append(tip_box("Export complet", [
+    "Le bouton <b>« Export complet... »</b> exporte, quelles que soient les colonnes "
+    "actuellement sélectionnées à l'écran, un jeu fixe de colonnes couvrant l'essentiel des "
+    "informations : Nom du fichier, Saison, Manche, Grand Prix, Type, Durée, Taille du "
+    "fichier, Chaîne, Langue audio, Résolution, FPS, Codec vidéo, Bitrate vidéo, Codec "
+    "audio, Bitrate audio, Type de scan, Ratio d'affichage, Dossier et Date de "
+    "modification.",
+    "Pratique pour obtenir rapidement un export complet et reproductible, sans avoir à "
+    "modifier la sélection de colonnes affichée à l'écran. Le format (CSV ou Excel) se "
+    "choisit simplement via l'extension indiquée dans la boîte de dialogue (.csv ou "
+    ".xlsx).",
+]))
 story.append(rule())
 
 # ---------------------------------------------------------------- 10. Dépannage
@@ -424,8 +438,8 @@ fields = [
     ]),
     ("Vidéo", [
         ("Format vidéo", "Nom du codec vidéo, sous sa forme la plus parlante (ex. x264 pour "
-         "de l'AVC/H.264, x265 pour du HEVC/H.265, divx pour du MPEG-4 Visual) — cohérent "
-         "quel que soit le format du fichier (MKV, MP4, TS...)"),
+         "de l'AVC/H.264, x265 pour du HEVC/H.265, divx pour du MPEG-4 Visual, MPEG pour "
+         "l'ancien MPEG-1/2) — cohérent quel que soit le format du fichier (MKV, MP4, TS...)"),
         ("Codec vidéo", "Identique à Format vidéo (les deux affichent la même valeur fiable, "
          "quel que soit le conteneur du fichier)"),
         ("Profil codec vidéo", "Profil du codec (High, Main...)"),
@@ -433,29 +447,32 @@ fields = [
         ("Hauteur (px)", "Hauteur de l'image en pixels"),
         ("Résolution", "Largeur x Hauteur combinées"),
         ("FPS", "Nombre d'images par seconde"),
-        ("Bitrate vidéo", "Débit binaire de la piste vidéo"),
+        ("Bitrate vidéo", "Débit binaire de la piste vidéo. Si cette information n'est pas "
+         "disponible pour la piste vidéo (certains fichiers MPEG-TS), le débit binaire "
+         "global du fichier est utilisé à la place"),
         ("Profondeur de couleur", "Nombre de bits par composante de couleur"),
         ("Ratio d'affichage", "Format d'image, au format lisible (ex. 16:9, 4:3, 2.35:1)"),
         ("Type de scan", "Progressif ou entrelacé"),
         ("Sous-échantillonnage", "Chroma subsampling (ex. 4:2:0)"),
     ]),
     ("Audio", [
-        ("Format audio", "Format de la piste audio (AAC, AC-3...) — cohérent quel que soit "
-         "le conteneur du fichier"),
+        ("Format audio", "Format de la piste audio (AAC, AC-3, MP3...) — cohérent quel que "
+         "soit le conteneur du fichier"),
         ("Codec audio", "Identique à Format audio (les deux affichent la même valeur fiable, "
          "quel que soit le conteneur du fichier)"),
         ("Bitrate audio", "Débit binaire de la piste audio"),
         ("Mode bitrate audio", "Mode de débit (CBR, VBR...)"),
         ("Canaux audio", "Nombre de canaux (2 = stéréo, 6 = 5.1...)"),
         ("Fréquence d'échantillonnage", "Fréquence d'échantillonnage audio (kHz)"),
-        ("Langue audio", "Langue(s) audio du fichier. Si plusieurs pistes audio ont des "
-         "langues différentes, toutes les langues distinctes sont affichées (séparées par "
-         "une virgule). Si le fichier ne renseigne aucune langue, une langue déduite du nom "
-         "de fichier peut être utilisée en remplacement (voir « Informations déduites du "
-         "nom de fichier », étape 6) ; sinon le champ reste vide. Cas particulier d'une "
-         "piste audio unique dont le nom de chaîne n'est pas reconnu (voir ci-dessous) : la "
-         "langue lue dans le fichier est alors remplacée par celle de la chaîne retrouvée "
-         "dans le nom de fichier, si elle est identifiée"),
+        ("Langue audio", "Langue(s) audio du fichier, affichée(s) en toutes lettres (ex. "
+         "« Français » plutôt que le code « fr » lu dans le fichier). Si plusieurs pistes "
+         "audio ont des langues différentes, toutes les langues distinctes sont affichées "
+         "(séparées par une virgule). Si le fichier ne renseigne aucune langue, une langue "
+         "déduite du nom de fichier peut être utilisée en remplacement (voir « Informations "
+         "déduites du nom de fichier », étape 6) ; sinon le champ reste vide. Cas "
+         "particulier d'une piste audio unique dont le nom de chaîne n'est pas reconnu (voir "
+         "ci-dessous) : la langue lue dans le fichier est alors remplacée par celle de la "
+         "chaîne retrouvée dans le nom de fichier, si elle est identifiée"),
         ("Chaîne", "Nom de la chaîne TV, déduit en priorité du titre de la piste audio en "
          "retirant un éventuel commentaire entre parenthèses (ex. « TF1 (José Rosinski) » "
          "devient « TF1 »). Si plusieurs pistes audio ont des chaînes différentes, elles "
@@ -468,7 +485,9 @@ fields = [
         ("Nb pistes audio", "Nombre de pistes audio présentes dans le fichier"),
     ]),
     ("Compétition (déduit du nom de fichier)", [
-        ("Saison", "Année de la saison, déduite du nom de fichier (ex. 1998)"),
+        ("Saison", "Année de la saison, déduite du nom de fichier (ex. 1998), ou à défaut "
+         "d'une année plausible détectée dans le nom ou le chemin du fichier (voir "
+         "« Informations déduites du nom de fichier », étape 6)"),
         ("Manche", "Numéro de la manche/course dans la saison, déduit du nom de fichier"),
         ("Grand Prix", "Nom du Grand Prix, retrouvé à partir de la Saison et de la Manche "
          "dans une table de correspondance modifiable (et non déduit directement du nom de "
