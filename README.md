@@ -42,7 +42,7 @@ MetaExtract.sln
 │   └── Services/
 │       ├── FieldCatalog.cs           Catalogue des champs + formatage d'affichage
 │       ├── IMediaInfoProvider.cs     Abstraction de la source de métadonnées
-│       ├── MediaInfoCliProvider.cs   Implémentation via mediainfo.exe --Output=JSON
+│       ├── MediaInfoCliProvider.cs   Implémentation via mediainfo.exe --Output=file://...
 │       ├── FolderScanner.cs          Parcours récursif des dossiers
 │       ├── MediaScanOrchestrator.cs  Orchestration scan + parallélisme + progression
 │       ├── ExportService.cs          Export CSV / Excel (ClosedXML)
@@ -75,6 +75,38 @@ dotnet publish MetaExtract.App -c Release -r win-x64 --self-contained true -p:Pu
 
 L'exécutable sera généré dans
 `MetaExtract.App\bin\Release\net8.0-windows\win-x64\publish\`.
+
+## Publier une release
+
+Le numéro de version (Versioning Sémantique, `MAJOR.MINOR.PATCH`) est
+centralisé dans `Directory.Build.props` à la racine du dépôt. Le script
+`scripts\release.ps1` automatise tout le cycle : mise à jour de la
+version, build Release autonome (la commande ci-dessus), création d'un
+zip dans `releases\` (ignoré par git), tag git `vX.Y.Z`, push vers
+`origin`, et création de la Release GitHub si l'outil `gh` est installé.
+
+Depuis un terminal PowerShell, à la racine du dépôt (working tree propre,
+sans modification non commitée) :
+
+```powershell
+# Première release, à partir de la version actuelle (1.0.0) sans l'incrémenter :
+.\scripts\release.ps1 -Version 1.0.0
+
+# Releases suivantes : incrémente automatiquement PATCH (1.0.0 -> 1.0.1)...
+.\scripts\release.ps1
+
+# ...ou MINOR / MAJOR :
+.\scripts\release.ps1 -Bump Minor
+.\scripts\release.ps1 -Bump Major
+
+# Pour tester sans rien envoyer sur GitHub :
+.\scripts\release.ps1 -SkipPush -SkipGitHubRelease
+```
+
+Si l'outil `gh` (GitHub CLI) n'est pas installé, le script affiche le
+lien direct vers `https://github.com/hemoras/MetaExtract/releases/new`
+pour créer la Release manuellement en y attachant le zip généré dans
+`releases\`.
 
 ## Remarques
 

@@ -157,15 +157,23 @@ try {
 
     # --- 3. Mettre a jour Directory.Build.props et commiter --------------
 
-    Write-Step "Mise a jour de Directory.Build.props"
+    if ($newVersion -eq $currentVersion) {
+        # Cas d'une premiere release qui tague simplement la version deja en
+        # place (ex: -Version 1.0.0 alors que Directory.Build.props vaut deja
+        # 1.0.0) : rien a modifier ni a commiter, on passe directement au build.
+        Write-Step "Directory.Build.props deja a jour ($newVersion) — pas de commit necessaire"
+    }
+    else {
+        Write-Step "Mise a jour de Directory.Build.props"
 
-    $newPropsContent = $propsContent -replace "<VersionPrefix>\d+\.\d+\.\d+</VersionPrefix>", "<VersionPrefix>$newVersion</VersionPrefix>"
-    Set-Content -Path $PropsPath -Value $newPropsContent -NoNewline -Encoding UTF8
+        $newPropsContent = $propsContent -replace "<VersionPrefix>\d+\.\d+\.\d+</VersionPrefix>", "<VersionPrefix>$newVersion</VersionPrefix>"
+        Set-Content -Path $PropsPath -Value $newPropsContent -NoNewline -Encoding UTF8
 
-    git add $PropsPath
-    git commit -m "chore(release): bump version to $newVersion"
-    if ($LASTEXITCODE -ne 0) {
-        Exit-WithError "Le commit de version a echoue."
+        git add $PropsPath
+        git commit -m "chore(release): bump version to $newVersion"
+        if ($LASTEXITCODE -ne 0) {
+            Exit-WithError "Le commit de version a echoue."
+        }
     }
 
     # --- 4. Compilation Release (autonome, fichier unique, win-x64) ------
