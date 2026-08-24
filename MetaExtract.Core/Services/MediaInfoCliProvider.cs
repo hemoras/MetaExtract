@@ -267,12 +267,14 @@ public sealed class MediaInfoCliProvider : IMediaInfoProvider
                 if (!videoCaptured)
                 {
                     var f = line.Substring(4).Split('|');
-                    videoFormat = Field(f, 0);
                     // %CodecID% (position 1 du template) n'est pas fiable pour l'affichage :
                     // c'est un identifiant propre au conteneur (ex. "V_MPEG4/ISO/AVC" en
                     // Matroska, mais un simple code numérique comme "27" en MPEG-TS, illisible).
                     // %Format% est en revanche cohérent quel que soit le conteneur (toujours
                     // "AVC", "HEVC"...), donc on réutilise cette même valeur pour les deux champs.
+                    // NormalizeVideoFormat() simplifie ensuite certains libellés MediaInfo
+                    // trop techniques (ex. "MPEG Video" -> "MPEG") pour l'affichage.
+                    videoFormat = NormalizeVideoFormat(Field(f, 0));
                     videoCodecId = videoFormat;
                     videoProfile = Field(f, 2);
                     width = (int?)ParseLong(f, 3);
@@ -293,10 +295,12 @@ public sealed class MediaInfoCliProvider : IMediaInfoProvider
 
                 if (!audioCaptured)
                 {
-                    audioFormat = Field(f, 0);
                     // Même remarque que pour la vidéo : %CodecID% (ex. "A_MPEG/L3" en
                     // Matroska vs "15-2" en MPEG-TS) n'est pas cohérent d'un conteneur à
                     // l'autre. On réutilise %Format%, cohérent partout (ex. "MPEG Audio").
+                    // NormalizeAudioFormat() simplifie ensuite certains libellés MediaInfo
+                    // trop techniques (ex. "MPEG Audio" -> "MP3") pour l'affichage.
+                    audioFormat = NormalizeAudioFormat(Field(f, 0));
                     audioCodecId = audioFormat;
                     audioBitRate = ParseLong(f, 2);
                     audioBitRateMode = Field(f, 3);
@@ -374,6 +378,28 @@ public sealed class MediaInfoCliProvider : IMediaInfoProvider
         var cleaned = ChaineParenSuffixRegex.Replace(title.Trim(), "").Trim();
         return string.IsNullOrEmpty(cleaned) ? null : cleaned;
     }
+
+    /// <summary>
+    /// Simplifie certains libellés vidéo bruts renvoyés par MediaInfo (%Format%)
+    /// pour un affichage plus lisible dans l'application. Les valeurs non listées
+    /// sont conservées telles quelles (ex: "AVC", "HEVC"...).
+    /// </summary>
+    private static string? NormalizeVideoFormat(string? format) => format switch
+    {
+        "MPEG Video" => "MPEG",
+        _ => format,
+    };
+
+    /// <summary>
+    /// Simplifie certains libellés audio bruts renvoyés par MediaInfo (%Format%)
+    /// pour un affichage plus lisible dans l'application. Les valeurs non listées
+    /// sont conservées telles quelles (ex: "AC-3", "AAC"...).
+    /// </summary>
+    private static string? NormalizeAudioFormat(string? format) => format switch
+    {
+        "MPEG Audio" => "MP3",
+        _ => format,
+    };
 
     private static string? Field(string[] fields, int index) =>
         index < fields.Length && !string.IsNullOrWhiteSpace(fields[index]) ? fields[index] : null;
