@@ -80,47 +80,40 @@ L'exécutable sera généré dans
 
 Le numéro de version (Versioning Sémantique, `MAJOR.MINOR.PATCH`) est
 centralisé dans `Directory.Build.props` à la racine du dépôt. Le script
-`scripts\release.ps1` automatise tout le cycle : mise à jour de la
+`scripts/release.sh` automatise tout le cycle : mise à jour de la
 version, build Release autonome (la commande ci-dessus), création d'un
-zip dans `releases\` (ignoré par git), tag git `vX.Y.Z`, push vers
+zip dans `releases/` (ignoré par git), tag git `vX.Y.Z`, push vers
 `origin`, et création de la Release GitHub si l'outil `gh` est installé.
 
-Depuis un terminal PowerShell, à la racine du dépôt (working tree propre,
-sans modification non commitée) :
+Il s'exécute depuis **Git Bash** (fourni avec Git pour Windows — clic
+droit dans le dossier du dépôt dans l'Explorateur → « Git Bash Here »,
+ou onglet "Git Bash" dans Windows Terminal), à la racine du dépôt
+(working tree propre, sans modification non commitée) :
 
-> **Première exécution : erreur « n'est pas signé numériquement »**
-> Par défaut, Windows interdit l'exécution des scripts `.ps1` non signés.
-> Si `.\scripts\release.ps1` refuse de se lancer avec une erreur
-> `UnauthorizedAccess` / « non signé numériquement », autorisez
-> l'exécution des scripts locaux une bonne fois pour toutes (pas besoin
-> d'être administrateur) :
-> ```powershell
-> Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-> ```
-> Ou, sans changer le réglage de façon permanente, pour un seul lancement :
-> ```powershell
-> powershell -ExecutionPolicy Bypass -File .\scripts\release.ps1 -Version 1.0.0
-> ```
-
-```powershell
+```bash
 # Première release, à partir de la version actuelle (1.0.0) sans l'incrémenter :
-.\scripts\release.ps1 -Version 1.0.0
+./scripts/release.sh --version 1.0.0
 
 # Releases suivantes : incrémente automatiquement PATCH (1.0.0 -> 1.0.1)...
-.\scripts\release.ps1
+./scripts/release.sh
 
 # ...ou MINOR / MAJOR :
-.\scripts\release.ps1 -Bump Minor
-.\scripts\release.ps1 -Bump Major
+./scripts/release.sh --bump minor
+./scripts/release.sh --bump major
 
 # Pour tester sans rien envoyer sur GitHub :
-.\scripts\release.ps1 -SkipPush -SkipGitHubRelease
+./scripts/release.sh --skip-push --skip-github-release
 ```
+
+Si `./scripts/release.sh` n'est pas reconnu comme exécutable (erreur
+« Permission denied »), lancez-le via `bash scripts/release.sh ...`, ou
+rendez-le exécutable une bonne fois pour toutes avec
+`chmod +x scripts/release.sh`.
 
 Si l'outil `gh` (GitHub CLI) n'est pas installé, le script affiche le
 lien direct vers `https://github.com/hemoras/MetaExtract/releases/new`
 pour créer la Release manuellement en y attachant le zip généré dans
-`releases\`.
+`releases/`.
 
 ## Remarques
 
